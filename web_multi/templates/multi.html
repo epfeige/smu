@@ -1,0 +1,35 @@
+<!-- templates/form.html -->
+<html>
+  <head>
+    <script type="text/javascript">
+      function predict() {
+        // Get the input file and output file from the form
+        var inputFile = document.getElementById("inputFile").files[0];
+        var outputFile = document.getElementById("outputFile").value;
+
+        // Call the predict_ers function with the selected files
+        // python.predict_ers(inputFile, outputFile);
+        var form = new FormData();
+        form.append("inputFile", inputFile);
+        form.append("outputFile", outputFile);
+        fetch('/', {
+            method: 'POST',
+            body: form
+        })
+        .then(response => response.text())
+        .then(data => {
+          console.log(data);
+        });
+      }
+    </script>
+    <title>Multi</title>
+  </head>
+  <body>
+    <br>
+    <form>
+      Input File: <input type="file" id="inputFile" name="inputFile"><br><br>
+      Output File: <input type="text" id="outputFile" name="outputFile"><br><br>
+      <input type="button" value="Predict" onclick="predict()">
+    </form>
+  </body>
+</html>
