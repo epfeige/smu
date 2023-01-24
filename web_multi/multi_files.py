@@ -6,7 +6,7 @@ import requests
 import os
 
 app = Flask(__name__)
-app.secret_key = '091298160'
+app.secret_key = 'Hodel3534'
 output_directory = 'web_multi/output'
 output_path = os.path.join(os.getcwd(), output_directory)
 os.makedirs(output_path, exist_ok=True)
