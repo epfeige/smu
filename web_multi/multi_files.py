@@ -1,42 +1,35 @@
-# script.py
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, flash, jsonify
 import csv
 import json
 import pandas as pd
 import requests
+import os
 
 app = Flask(__name__)
+app.secret_key = '091298160'
+output_directory = 'web_multi/output'
+output_path = os.path.join(os.getcwd(), output_directory)
+os.makedirs(output_path, exist_ok=True)
 
 
 def predict_ers(input_file, output_file):
-    # Read the input CSV file using Pandas
-    # df = pd.read_csv(input_file)
-    df = pd.read_csv(input_file, dtype={'ER_pred': float})
+    df = pd.read_csv(input_file)
     df['ER_pred'] = float('nan')
-    # Convert the dataframe to a JSON-style dictionary
     df_data = df.to_dict(orient='records')
-    # Run the prediction script for each row
+
+    def get_prediction(x):
+        x = json.dumps(x)
+        response = requests.post("http://rnd1.cs.smu.ca:3839/ers", json=json.loads(x))
+        if response.status_code != 200:
+            raise ValueError(response.content)
+        return response.json()
+        # return response.json()['result']
     for i in range(len(df_data)):
-        # Filter data to only include the keys specified in keys.json
-        # filtered_data = {k: df_data[i][k] for k in keys if k in df_data[i]}
         df_data[i].pop("ER_pred", None)
-        # Write json data to file
-        with open("file.json", "w") as f:
-            json.dump(df_data[i], f)
-        # Read json data from file
-        with open("file.json", "r") as f:
-            json_obj = json.load(f)
-        response = requests.post("http://rnd1.cs.smu.ca:3839/ers", json=json_obj)
-        result = response.text
-        # df_data[i]['ER_pred'] = response.json()['result']
-        #  df['ER_pred'] = df_data['ER_pred']
-        df.at[i, 'ER_pred'] = result  #  df_data[i]['ER_pred']
-
-
-    # Write the new CSV file with the added column
-   #  df = pd.DataFrame.from_dict(df_data)
-    print('outfile: ', output_file)
-    df.to_csv(output_file, index=False)
+        df_data[i]['ER_pred'] = get_prediction(df_data[i])
+    df = pd.DataFrame.from_records(df_data)
+    print(output_path)
+    df.to_csv(output_path+"/"+output_file, index=False)
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -44,7 +37,14 @@ def index():
     if request.method == "POST":
         input_file = request.files["inputFile"]
         output_file = request.form["outputFile"]
+        folder_name = request.form['folder_name']
         predict_ers(input_file, output_file)
+        if os.path.exists(output_path + "/" + output_file):
+            flash_message = 'File saved to ' + folder_name + output_file
+            return jsonify({'flash_message': flash_message})
+        else:
+            flash_message = "Error: File does not exist or there was an error checking for the file"
+            return jsonify({'flash_message': flash_message})
     return render_template("multi.html")
 
 

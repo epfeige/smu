@@ -1,35 +1,91 @@
 <!-- templates/form.html -->
 <html>
   <head>
-    <script type="text/javascript">
-      function predict() {
-        // Get the input file and output file from the form
-        var inputFile = document.getElementById("inputFile").files[0];
-        var outputFile = document.getElementById("outputFile").value;
-
-        // Call the predict_ers function with the selected files
-        // python.predict_ers(inputFile, outputFile);
-        var form = new FormData();
-        form.append("inputFile", inputFile);
-        form.append("outputFile", outputFile);
-        fetch('/', {
-            method: 'POST',
-            body: form
-        })
-        .then(response => response.text())
-        .then(data => {
-          console.log(data);
-        });
-      }
-    </script>
     <title>Multi</title>
+    <style>
+        /* Center the form in the page */
+        div {
+            font-family: "Helvetica Neue";
+            align-items: center;
+            justify-content: center;
+            height: 10vh;
+        }
+
+        /* Style the form elements */
+        form {
+            border: 1px solid black;
+            padding: 10px;
+            background-color: #f2f2f2;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+            align-content: center;
+        }
+
+        input[type="text"] {
+            padding: 5px 20px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+        }
+
+        input[type="submit"] {
+            width: 20%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .message{
+          margin: 20px 5px;
+          background-color: aliceblue;
+        }
+    </style>
   </head>
   <body>
     <br>
     <form>
       Input File: <input type="file" id="inputFile" name="inputFile"><br><br>
-      Output File: <input type="text" id="outputFile" name="outputFile"><br><br>
+      Output File: <input type="text" id="outputFile" name="outputFile" value="outfile.csv"><br><br>
       <input type="button" value="Predict" onclick="predict()">
     </form>
+    <div class="message">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class='alert alert-{{category}}'>{{message|safe}}</div>
+      {% endfor %}
+    {% endwith %}
+    </div>
+    <script type="text/javascript">
+        function predict() {
+            // Get the input file and output file from the form
+            var inputFile = document.getElementById("inputFile").files[0];
+            var outputFile = document.getElementById("outputFile").value;
+            var folder_name = "web_multi/output/";
+
+            // Call the predict_ers function with the selected files
+            var form = new FormData();
+            form.append("inputFile", inputFile);
+            form.append("outputFile", outputFile);
+            form.append("folder_name", folder_name)
+
+            fetch('/', {
+              method: 'POST',
+              body: form
+            }).then(response => {
+              return response.json();
+            }).then(data => {
+              // Update the HTML page with the flash message here
+              // Example:
+              document.querySelector('.alert').innerHTML = data.flash_message;
+            });
+        }
+    </script>
   </body>
 </html>
