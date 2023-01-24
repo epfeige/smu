@@ -76,15 +76,15 @@
             form.append("folder_name", folder_name)
 
             fetch('/', {
-              method: 'POST',
-              body: form
+                method: 'POST',
+                body: form
             }).then(response => {
-              return response.json();
+                return response.json();
             }).then(data => {
-              // Update the HTML page with the flash message here
-              // Example:
-              document.querySelector('.alert').innerHTML = data.flash_message;
+                // Display the flash message in an alert window with a close button labeled 'OK'
+                alert(data.flash_message);
             });
+
         }
     </script>
   </body>
