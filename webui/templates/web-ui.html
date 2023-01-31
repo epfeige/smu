@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web UI</title>
+    <style>
+        /* Center the form in the page */
+        div {
+            font-family: "Helvetica Neue";
+            align-items: center;
+            justify-content: center;
+            height: 10vh;
+        }
+
+        .fdiv {
+            border: 2px;
+            text-align: left;
+            margin-left: 30px;
+        }
+
+        /* Style the form elements */
+        form {
+            border: 1px solid black;
+            padding: 10px;
+            background-color: #f2f2f2;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+            align-content: center;
+        }
+
+        input[type="text"] {
+            padding: 12px 20px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+        }
+
+        input[type="submit"] {
+            width: 20%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+<div>
+    <h1> Form Title </h1>
+    <p> Description text </p>
+    <form method="post" enctype="multipart/form-data" action="/run_script">
+        <div class="fdiv">
+            <label>Script Number:</label>
+            <label>
+                <select name="script_number" required>
+                    <option value="1">ERS prediction</option>
+                    <option value="2">Optimization Suggestions</option>
+                </select>
+            </label>
+        </div>
+        <div class="fdiv">
+            <label>File:</label>
+            <input type="file" name="file" required>
+        </div>
+        <div class="fdiv">
+            <input type="submit" value="Run Script">
+        </div>
+    </form>
+    <br>
+    <div id="result">
+        <p>File ID: {{ row }}</p>
+        <p>ERS original: {{ ers_org }}</p>
+        <p>ERS prediction: {{ result }}</p>
+    </div>
+</div>
+
+</body>
+</html>

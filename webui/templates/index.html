@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>Web UI</title>
+    <style>
+        /* Center the form in the page */
+        div {
+            font-family: "Helvetica Neue";
+            font-size: larger;
+            align-items: center;
+            justify-content: center;
+            height: 10vh;
+            padding: 12px;
+        }
+        form {
+            font-family: "Helvetica Neue";
+            font-size: larger;
+            border: 1px solid black;
+            padding: 12px;
+            background-color: #f2f2f2;
+        }
+        input[type="submit"] {
+            width: 20%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<h1>Script Runner</h1>
+<form method="post" action="/run_script" enctype="multipart/form-data">
+    <label for="script">Select a script:</label>
+    <select id="script" name="script">
+        <option value="ERS">ER</option>
+        <option value="OPTIMIZATION">OPTI</option>
+        <option value="Report">Report</option>
+    </select><br><br>
+    <label for="file">Select a file:</label>
+    <input type="file" id="file" name="file"><br><br>
+<!--    <label for="result_folder">Result Folder:</label>-->
+<!--    <input type="text" id="result_folder" name="result_folder" required>-->
+    <br>
+    <input type="submit" value="Run Script">
+</form>
+<div id="result">
+    <p>ERS prediction: {{ result }}</p>
+</div>
+</body>
+</html>
