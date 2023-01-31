@@ -24,12 +24,24 @@ def predict_ers(input_file, output_file):
             raise ValueError(response.content)
         return response.json()
         # return response.json()['result']
+
     for i in range(len(df_data)):
-        df_data[i].pop("ER_pred", None)
-        df_data[i]['ER_pred'] = get_prediction(df_data[i])
+        try:
+            df_data[i].pop("ER_pred", None)
+            df_data[i]['ER_pred'] = get_prediction(df_data[i])
+            print(f'Processing row {i + 1} of {len(df_data)}')
+        except:
+            with open('output/errors.txt', 'a') as f:
+                f.write(f'{i + 1}, ')
+            print(f'Error on row {i + 1}')
+            continue
     df = pd.DataFrame.from_records(df_data)
     print(output_path)
     df.to_csv(output_path+"/"+output_file, index=False)
+    if os.path.exists(output_path + "/" + output_file):
+        flash_message = 'File saved to ' + output_directory + output_file + ' with ' + output_directory + ' rows failed to process'
+        return jsonify({'flash_message': flash_message})
+
 
 
 @app.route("/", methods=["GET", "POST"])
