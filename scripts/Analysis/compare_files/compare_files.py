@@ -1,31 +1,41 @@
 import pandas as pd
+import datetime
 
 file_1 = '../../../data/0-Original_NRCan_data/nrcan-NS-org-selected-columns-Existing-Homes-nozero.csv'
 file_2 = '../../../data/0-Original_NRCan_data/nrcan-NS-org-cleanData46variables .csv'
 
+# Get the current date
+now = datetime.datetime.now()
+
+# Format the date in the desired format
+current_date = now.strftime("%b. %d, %Y")
+
 df1 = pd.read_csv(file_1)
 df2 = pd.read_csv(file_2)
+#
+# import pandas as pd
+#
+# df1 = pd.read_csv('file1.csv')
+# df2 = pd.read_csv('file2.csv')
 
-
-# Combine the two dataframes and identify the unique rows
-df_unique = pd.concat([df1, df2]).drop_duplicates(keep=False)
-
-# Identify the unique rows in file1
-df_unique_1 = df_unique[df_unique.isin(df1)].dropna()
-
-# Identify the unique rows in file2
-df_unique_2 = df_unique[df_unique.isin(df2)].dropna()
+# Compare the two dataframes
+result = df1.merge(df2, indicator=True, how='outer')
+df_unique_1 = result[result['_merge'] == 'left_only']
+df_unique_2 = result[result['_merge'] == 'right_only']
 
 # Write a report about the comparison results to a text file
 with open('compare_report.txt', 'w') as f:
+    f.write('Comparison date: ' + current_date + '\n\n')
+    f.write('File 1: (' + file_1 + ')\n')
+    f.write('File 2: (' + file_2 + ')\n\n')
     f.write('Number of rows compared: ' + str(len(df1) + len(df2)) + '\n')
     f.write('Number of rows in file 1: ' + str(len(df1)) + '\n')
-    f.write('Number of rows in file 2: ' + str(len(df2)) + '\n')
+    f.write('Number of rows in file 2: ' + str(len(df2)) + '\n\n')
     if set(df1.columns) != set(df2.columns):
-        f.write('Difference in columns: ' + str(set(df1.columns) ^ set(df2.columns)) + '\n')
+        f.write('Difference in columns: ' + str(set(df1.columns) ^ set(df2.columns)) + '\n\n')
     else:
-        f.write('No difference in columns.\n')
-    f.write('Number of unique rows: ' + str(len(df_unique)) + '\n')
+        f.write('No difference in columns.\n\n')
+    f.write('Number of unique rows: ' + str(len(df_unique_1) + len(df_unique_2)) + '\n')
     f.write('Number of unique rows in file 1: ' + str(len(df_unique_1)) + '\n')
     f.write('Number of unique rows in file 2: ' + str(len(df_unique_2)) + '\n')
 
