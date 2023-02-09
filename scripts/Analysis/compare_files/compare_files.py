@@ -2,7 +2,7 @@ import pandas as pd
 import datetime
 
 file_1 = '../../../data/0-Original_NRCan_data/nrcan-NS-org-selected-columns-Existing-Homes-nozero.csv'
-file_2 = '../../../data/0-Original_NRCan_data/nrcan-NS-org-cleanData46variables .csv'
+file_2 = '../../../data/0-Original_NRCan_data/nrcan-NS-org-cleanData46variables.csv'
 
 # Get the current date
 now = datetime.datetime.now()
@@ -12,11 +12,20 @@ current_date = now.strftime("%b. %d, %Y")
 
 df1 = pd.read_csv(file_1)
 df2 = pd.read_csv(file_2)
-#
-# import pandas as pd
-#
-# df1 = pd.read_csv('file1.csv')
-# df2 = pd.read_csv('file2.csv')
+
+# Drop columns in dataframe that has extra columns to make both df identical
+def drop_extra_columns(df1, df2):
+    if len(df1.columns) <= len(df2.columns):
+        smaller_df = df1
+        larger_df = df2
+    else:
+        print("Warning: file2 seems to be bigger than main file. Please switch around and try again.")
+        return
+    smaller_df_attributes = list(smaller_df.columns)
+    larger_df.drop(columns=[col for col in larger_df.columns if col not in smaller_df_attributes], inplace=True)
+
+
+drop_extra_columns(df1, df2)
 
 # Compare the two dataframes
 result = df1.merge(df2, indicator=True, how='outer')
