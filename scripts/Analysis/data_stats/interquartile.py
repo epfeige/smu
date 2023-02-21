@@ -5,9 +5,37 @@ import math
 import matplotlib.pyplot as plt
 
 
+def plot_histogram(df, column, show_histograms=True):
+    # Plot histogram
+    if show_histograms:
+        fig, ax = plt.subplots()
+        binwidth = 0.01
+        bins = np.arange(df[column].min()-binwidth, df[column].max()+binwidth, binwidth)
+        colors = np.where(df[column] < 0, 'darkorange', 'darkblue').reshape(-1, 1)
+        ax.hist(df[column], bins=bins, color=colors[0])
+        ax.hist(df[column], bins=bins, color=colors[1])
+        ax.set_title(f"Histogram of {column}")
+        ax.set_xlabel(column)
+        ax.set_ylabel("Frequency")
+        ax.axvline(x=0, color='black', lw=2) # Add vertical line at 0 to indicate separation of positive/negative values
+        plt.savefig(f"{column}_histogram.png") # Saving the histogram as a png file with column name as filename
+        plt.show()
+
+
+
 def analyze_outliers(data_file, column, num_sections, show_histograms=True):
     # Load data into DataFrame
     df = pd.read_csv(data_file)
+
+    plot_histogram(df, column)
+
+    # Create output directory if it doesn't exist
+    output_dir = os.path.splitext(data_file)[0]
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # initialize an empty list to store the output strings
+    output_strings = ["Analysis Results for " + output_dir + ".csv:\n\n"]
 
     # Split column into positive and negative values based on %_diff
     pos_df = df[df['%_diff'] >= 0]
@@ -54,16 +82,29 @@ def analyze_outliers(data_file, column, num_sections, show_histograms=True):
         # Calculate percentage of outliers
         percent_outliers = num_outliers / total_rows * 100
 
+        output_strings.append("\nResults for " + label + " values of " + column + ":\n")
 
-        # Print results
+        # Print and save results
         for i, (lower, upper) in enumerate(ranges):
             if math.isclose(upper, q3, rel_tol=1e-9):
                 section_str = f"{lower:.4f}, {upper:.4f}]"
             else:
                 section_str = f"{lower:.4f}, {upper:.4f})"
-            print(f"Q{i + 1}: {section_str} - ({lower * 100:.2f}% to {upper * 100:.1f}%) - {counts[i]}")
+            output_string = f"Q{i + 1}: {section_str} - ({lower * 100:.2f}% to {upper * 100:.1f}%) - {counts[i]}"
+            output_strings.append(output_string)
+            print(output_string)
 
-        print(f"Percentage of outliers: {percent_outliers:.1f}% ({num_outliers} of {total_rows})\n")
+        output_strings.append("Mean: " + str(round(mean, 2)) + "\n STD: " + str(round(std, 2)) + "\n")
+
+        # extract the last 4 characters of the filename without extension using string slicing
+        last_four_chars = output_dir[-4:]
+        outfile = last_four_chars + "-report.txt"
+
+        # write the output strings to a text file
+        with open(f"{output_dir}/{outfile}", "w") as f:
+            f.write("\n".join(output_strings))
+
+        # print(f"Percentage of outliers: {percent_outliers:.1f}% ({num_outliers} of {total_rows})\n")
 
         # Save results
         results[label] = {
@@ -80,34 +121,16 @@ def analyze_outliers(data_file, column, num_sections, show_histograms=True):
             'std': std
         }
 
-        # Plot histogram
-        if show_histograms:
-            df[column].hist(bins=30)
-            plt.title(f"{label.capitalize()} values of {column}")
-            plt.show()
+    # Plot histogram
+    # if show_histograms:
+    #     df[column].hist(bins=30)
+    #     plt.title(f"{label.capitalize()} values of {column}")
+    #     plt.savefig(f"{output_dir}/{label}_histogram.png")  # Saving the histogram as a png file with label as filename
+    #     plt.show()
 
-    # Create output directory if it doesn't exist
-    output_dir = os.path.splitext(data_file)[0]
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
-    newline = os.linesep
-    # Write results to text file
-    with open(f"{output_dir}/analysis_results.txt", "w") as f:
-        f.write(f"Analysis Results for {output_dir}.csv:{newline}{newline}")
-
-        for label, result in results.items():
-            f.write(f"Results for {label} values of %_diff:{newline}")
-            f.write(
-                f"Q1: ({result['ranges'][0]:.4f}, {result['ranges'][1]:.4f}) - ({result['percent_outliers']:.2f}% to {result['ranges'][2]:.1f}%) - {result['counts'][0]}{newline}")
-            f.write(
-                f"Q2: ({result['ranges'][1]:.4f}, {result['ranges'][2]:.4f}) - ({result['ranges'][2]:.2f}'%' to {result['ranges'][3]:.1f}'%') - {result['counts'][1]}{newline}")
-            f.write(
-                f"Q3: ({result['ranges'][2]:.4f}, {result['ranges'][3]:.4f}) - ({result['ranges'][3]:.2f}'%' to {result['ranges'][4]:.1f}'%') - {result['counts'][2]}{newline}")
-            f.write(
-                f"Q4: ({result['ranges'][3]:.4f}, {result['ranges'][4]:.4f}] - ({result['ranges'][4]:.2f}'%' to {result['percent_outliers']:.1f}'%') - {result['counts'][3]}{newline}")
-            f.write(f"Mean: {result['mean']:.4f}{newline}")
-            f.write(f"Standard deviation: {result['std']:.4f}{newline}{newline}")
 
     # Print message to indicate analysis is complete
     print(f"Analysis complete: Files are in {output_dir}")
+
+
