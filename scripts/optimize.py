@@ -131,6 +131,7 @@ def calc_savings(orig, reductions_df, model_cost_w_ers, max_rows, first=False):
     # reductions_df.iat[0, reductions_df.columns.get_loc('cost_predicted')] = old_cost.iloc[0]
     reductions_df.iat[0, reductions_df.columns.get_loc('Main Heating Fuel')] = orig['Main Heating Fuel'].iloc[0]
     reductions_df['old_cost'] = old_cost.iloc[0]
+    reductions_df['unique_num'] = int(orig['unique_num'])
 
     return reductions_df
 
