@@ -80,6 +80,7 @@ with tqdm(total=len(data)) as pbar:
 
 idx = 0
 for out in outputs:
-    print(out[0])
-    out[0].to_csv("{}/{}_{}_{}.csv".format(out_folder, idx, out[1], "reductions"), index = False)
+    out_df, index = out
+    unique_num = out_df['unique_num'].iloc[0]
+    out[0].to_csv("{}/{}-{}_{}.csv".format(out_folder, idx, unique_num, "reductions"), index = False)
     idx += 1
