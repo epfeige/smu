@@ -96,9 +96,9 @@ def get_ers_reductions(orig, model_ers_w_cost, model_ers_no_cost, gi_weights_and
     pred['nchanges'] = nchanges
     pred['changes'] = (diff != 0).apply(lambda x: list(map(lambda y: upg_vals[y],
                                                            [i for i, v in enumerate(x) if v == True])), axis=1)
-    pred['tot_hs'] = dfp.tot_hs
-    pred['ratio'] = ratio
-    pred['ers_diff'] = original_ers - pred['predicted'] * ratio
+    pred['tot_hs'] = round(dfp.tot_hs, 2)
+    pred['ratio'] = round(ratio, 4)
+    pred['ers_diff'] = round(original_ers - pred['predicted'] * ratio, 4)
     pred['reduction'] = pred['ers_diff'] / pred['nchanges']
     pred = pred.rename(columns={"predicted": "ers_predicted"})
 
@@ -107,6 +107,7 @@ def get_ers_reductions(orig, model_ers_w_cost, model_ers_no_cost, gi_weights_and
     for col in ers_reductions:
         if col not in orig_cpy.columns:
             orig_cpy[col] = 'N/A'
+
     orig_cpy['ers_predicted'] = original_ers
     orig_cpy['ref'] = orig_ref
     ers_reductions['ref'] = 'N/A'
@@ -124,9 +125,10 @@ def calc_savings(orig, reductions_df, model_cost_w_ers, max_rows, first=False):
     update_mhf(reduc)
     reductions_df['Main Heating Fuel'] = reduc['Main Heating Fuel']
     new_cost = predict_df(reduc, model_cost_w_ers)['predicted']
-    old_cost = predict_df(orig, model_cost_w_ers)['predicted']
-    reductions_df['cost_predicted'] = new_cost
-    reduc['cost_savings'] = old_cost.iloc[0] - new_cost
+    old_cost = orig['Total Heating Cost']
+    # old_cost = predict_df(orig, model_cost_w_ers)['predicted']
+    reductions_df['cost_predicted'] = round(new_cost, 2)
+    reduc['cost_savings'] = round(old_cost.iloc[0] - new_cost, 2)
     reductions_df['cost_savings'] = reduc['cost_savings']
     # reductions_df.iat[0, reductions_df.columns.get_loc('cost_predicted')] = old_cost.iloc[0]
     reductions_df.iat[0, reductions_df.columns.get_loc('Main Heating Fuel')] = orig['Main Heating Fuel'].iloc[0]
@@ -163,9 +165,16 @@ def calc_ref_cost(orig, ref_rating, cost_w_ers):
     return predict_df(orig_cpy, cost_w_ers)['predicted'].iloc[0]
 
 
-all_vals = [*values.heat_pumps,
-            *values.heating_support,
-            *values.building_env,
-            *values.water_heating,
-            *values.other_heat_system,
-            *values.energy_prod]
+# all_vals = [*values.heat_pumps,
+#             *values.heating_support,
+#             *values.building_env,
+#             *values.water_heating,
+#             *values.other_heat_system,
+#             *values.energy_prod]
+
+# Building Envelop only
+all_vals = [*values.building_env]
+
+# Heating Systems only
+# all_vals = [*values.heat_pumps,
+#             *values.other_heat_system]

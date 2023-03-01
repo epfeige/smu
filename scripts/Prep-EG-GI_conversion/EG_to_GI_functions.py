@@ -148,7 +148,7 @@ def he_fp_ws(woodheat, eghheatfconsw, eghspaceenergy, points):
     return [0, 0]
 
 
-# *** Determining if Hating System is efficient ***
+# *** Determining if Heating System is efficient ***
 def no_he_sys(mainfuel, he_hsys):
     args = [['Electricity', -0.3], ['Oil', -0.4], ['Propane', -0.4], ['Natural Gas', -0.2], ['Wood', -0.13]]
     for i in range(len(args)):

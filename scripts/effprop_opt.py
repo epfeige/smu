@@ -78,8 +78,6 @@ class Attribs:
         return self.the_list
 
 
-import values
-
 """This file is to create a list of attributes to run an application which will determine what specific attributes
  will result in the lowest GJ/year in the ML prediction"""
 

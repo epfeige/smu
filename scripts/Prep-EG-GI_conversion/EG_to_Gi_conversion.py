@@ -2,10 +2,10 @@ import argparse
 import os
 import EG_to_GI_functions as EGtoGI
 
-
-"""This file is to import the data from the NRCan file, run the required EnerGuide attributes through the 
+"""This file is to import the data from the NRCan file, run the required ERS attributes through the 
 appropriate functions to get the equivalent GreenIndex (GI) value that simulates input from the agent.  
-Usage: python3 EG_to_GI_conversion.py -f input_file.csv -o output_folder """
+Usage: 
+python3 EG_to_GI_conversion.py -f input_file.csv -o output_folder """
 
 # --------------------------------------- Get data  (input) ---------------------------------------
 
@@ -23,7 +23,7 @@ output_folder = args.output
 # Ensure output folder exists and add '/' to end of folder name if needed
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
-if output_folder[len(output_folder)-1] != '/':
+if output_folder[len(output_folder) - 1] != '/':
     output_folder = output_folder + '/'
 
 # Get base name for output file
@@ -51,19 +51,20 @@ max_pts_ee_ep = max_pts_ep + max_pts_ee
 for row in eg_df.itertuples():
     index = row.Index
     # # Testing
-    # if index == 9400:
+    # if index == 10:
     #     break
-    # --- EnerGuide values from NRCan data: ----------------------
+    # --- ERS values from NRCan data: ----------------------
 
     # Following are direct/semi-direct conversions and need no function to convert to GI
     # Output column names are defined in create_GI_dataframe()
+    unique_num = eg_df['unique_num'][index]  # New unique ID added to NRCan files by Peter for aligning data
     date = eg_df['CREATIONDATE'][index]  # CREATIONDATE to Date
     idnum = eg_df['IDNUMBER'][index]  # IDNUMBER to ID
     fnum = eg_df['EVAL_ID'][index]  # EVAL_ID to File number:
     prov = eg_df['PROVINCE'][index]  # PROVINCE to Province:
     post = eg_df['POSTALCODE'][index]  # POSTALCODE to Postal Code
     flom2 = round(eg_df['FLOORAREA'][index], 2)  # FLOORAREA to Living area (m2)
-    floft2 = round(flom2*10.7639, 2)  # FLOORAREA to Living area (ft2)
+    floft2 = round(flom2 * 10.7639, 2)  # FLOORAREA to Living area (ft2)
     year = eg_df['YEARBUILT'][index]  # YEARBUILT to Year built
     htype = eg_df['TYPEOFHOUSE'][index]  # TYPEOFHOUSE to House Type
     stors = eg_df['STOREYS'][index]  # STOREYS to 'Stories'
@@ -82,8 +83,8 @@ for row in eg_df.itertuples():
     ersrating = eg_df['ERSRATING'][index]  # ERSRATING to ERS Rating
     refrating = eg_df['ERSREFHOUSERATING'][index]  # ERSREFHOUSERATING to Ref Rating
     ers_m2 = round(ersrating / haream2, 2)
-    diff = round((ersrating/refrating)-1, 1)
-    diffGJ = round(ersrating-refrating, 0)
+    diff = round((ersrating / refrating) - 1, 1)
+    diffGJ = round(ersrating - refrating, 0)
     shape = eg_df['PLANSHAPE'][index]
 
     # Following are for more complex conversions and are used in functions
@@ -147,11 +148,11 @@ for row in eg_df.itertuples():
                  ('Propane', round(consp / spaceen, 2), consx),
                  ('Electricity', round(conse / spaceen, 2), conse)]
     # Find biggest percentage of fuel used
-    main_fuel = max(fuel_args,  key=lambda x: x[1])  # ('fuel type', % use in decimal, consx)
+    main_fuel = max(fuel_args, key=lambda x: x[1])  # ('fuel type', % use in decimal, consx)
 
-# # Testing for fuel type
-#     if diff < 0.9:
-#         continue
+    # # Testing for fuel type
+    #     if diff < 0.9:
+    #         continue
 
     # ---------- Subgroup Heating System ----------
 
@@ -225,14 +226,15 @@ for row in eg_df.itertuples():
     max_pts_hs = float(gi_vp.loc['std_points', 'Heating System'])
     max_b_pts_hs = float(gi_vp.loc['b_points', 'Heating System'])
 
-    sub_hsys_tot = EGtoGI.tot_heatsys(max_pts_hs, no_he_sys, pts_hpmini[2], pts_hpair[2], pts_hpgeo[2], pts_hrv, pts_he_furn[1], pts_he_ps[1],
+    sub_hsys_tot = EGtoGI.tot_heatsys(max_pts_hs, no_he_sys, pts_hpmini[2], pts_hpair[2], pts_hpgeo[2], pts_hrv,
+                                      pts_he_furn[1], pts_he_ps[1],
                                       sub_sfeatures_tot, pts_he_ws[1])
 
     # -> Calculate Total for Group - Heating & Cooling -------------
     """ We ignore AC here - since HP would only get extra points and we do not consider Window-shakers"""
     sub_ac_tot = 0
     tot_heat_n_cool = sub_hsys_tot + sub_ac_tot
-    tot_hnc_perc = round(tot_heat_n_cool / float(gi_vp.loc['std_points', 'Heating & Cooling']), 3)  #H&C in %
+    tot_hnc_perc = round(tot_heat_n_cool / float(gi_vp.loc['std_points', 'Heating & Cooling']), 3)  # H&C in %
 
     # Group ----------------------------------------- Water Heating -----------------------
 
@@ -282,29 +284,34 @@ for row in eg_df.itertuples():
     tot_epee_perc = round(total_ee_ep / max_pts_ee_ep, 2)
 
     # --------------------------------------- Add data to GI DataFrame -----------------------------------
-    gi_df = gi_df.append({"Date": date, "ID": idnum, "EVAL_ID:": fnum, "Province": prov, "Postal Code": post,
-                          "Living area (ft2)": floft2, "Living area (m2)": flom2,
-                          "Year built": year, "House Type": htype, "Stories": stors, "Shape": shape,
-                          "Main Heating Fuel": furnacefuel, "heated area (m2)": haream2,
-                          "Total Heating Cost": tothcost, "Total Heat. Cost / m2": heatcostm2,
-                          "# of Doors": numdoor, "# of Windows": numwin, "SG Airtightness": pts_airtight,
-                          "Heat Pump - Geothermal": pts_hpgeo[2], "Heat Pump - Air to air": pts_hpair[2],
-                          "Heat Pump - Air to water": 0, "Heat Pump - Mini Split": pts_hpmini[2],
-                          'High Efficient Furnace': pts_he_furn[1], "HRV": pts_hrv,
-                          "High Efficiency Pellet Stove": pts_he_ps[1], "High Efficient Woodstove or Fireplace": pts_he_ws[1],
-                          "SG Supporting Features": pts_tot_subf, "No Primary Efficient System": no_he_sys, "SG Heating System": sub_hsys_tot,
-                          "Total Heating & Cooling": tot_heat_n_cool, "Total Heating & Cooling %": tot_hnc_perc, "SG Water Heater": sub_w_heat_tot,
-                          "SG Heat Recovery": sub_whr_tot, "Total Water Heating": tot_dhw, "Total WH %": tot_dhw_perc,
-                          "SG Insulation - Attic/Ceiling": pts_insatt,
-                          "SG Insulation - Exterior Walls": pts_insmain, "SG Insulation - Foundation": pts_insfound,
-                          "SG Doors": pts_totdr, "SG Windows": pts_totwin, "Total Building Envelope": tot_be_pts,
-                          "Total Building Envelope %": tot_be_perc,
-                          "Total Energy Efficiency (EE)": total_ee, "Total EE %": tot_ee_perc,
-                          "Solar PV": pts_spv, "Solar Hot Water System": pts_shw,
-                          "Total Energy Production": total_ep, "Total EP %": tot_ep_perc,
-                          "Combined EE & EP": total_ee_ep, "Combined EE & EP %": tot_epee_perc,
-                          "ERS Rating": ersrating, "Ref Rating": refrating,
-                          "diff %": diff, "diffGJ": diffGJ, "ERS Rating / m2": ers_m2}, ignore_index=True)
+    gi_df = gi_df.append(
+        {"unique_num": unique_num, "Date": date, "ID": idnum, "EVAL_ID:": fnum, "Province": prov, "Postal Code": post,
+         "Living area (ft2)": floft2, "Living area (m2)": flom2,
+         "Year built": year, "House Type": htype, "Stories": stors, "Shape": shape,
+         "Main Heating Fuel": furnacefuel, "heated area (m2)": haream2,
+         "Total Heating Cost": tothcost, "Total Heat. Cost / m2": heatcostm2,
+         "# of Doors": numdoor, "# of Windows": numwin, "SG Airtightness": pts_airtight,
+         "Heat Pump - Geothermal": pts_hpgeo[2], "Heat Pump - Air to air": pts_hpair[2],
+         "Heat Pump - Air to water": 0, "Heat Pump - Mini Split": pts_hpmini[2],
+         'High Efficient Furnace': pts_he_furn[1], "HRV": pts_hrv,
+         "High Efficiency Pellet Stove": pts_he_ps[1], "High Efficient Woodstove or Fireplace": pts_he_ws[1],
+         "SG Supporting Features": pts_tot_subf, "No Primary Efficient System": no_he_sys,
+         "SG Heating System": sub_hsys_tot,
+         "Total Heating & Cooling": tot_heat_n_cool, "Total Heating & Cooling %": tot_hnc_perc,
+         "SG Water Heater": sub_w_heat_tot,
+         "SG Heat Recovery": sub_whr_tot, "Total Water Heating": tot_dhw, "Total WH %": tot_dhw_perc,
+         "SG Insulation - Attic/Ceiling": pts_insatt,
+         "SG Insulation - Exterior Walls": pts_insmain, "SG Insulation - Foundation": pts_insfound,
+         "SG Doors": pts_totdr, "SG Windows": pts_totwin, "Total Building Envelope": tot_be_pts,
+         "Total Building Envelope %": tot_be_perc,
+         "Total Energy Efficiency (EE)": total_ee, "Total EE %": tot_ee_perc,
+         "Solar PV": pts_spv, "Solar Hot Water System": pts_shw,
+         "Total Energy Production": total_ep, "Total EP %": tot_ep_perc,
+         "Combined EE & EP": total_ee_ep, "Combined EE & EP %": tot_epee_perc,
+         "ERS Rating": ersrating, "Ref Rating": refrating,
+         "diff %": diff, "diffGJ": diffGJ, "ERS Rating / m2": ers_m2}, ignore_index=True)
+    # Ensure that unique_num is saved as int, not float
+    gi_df['unique_num'] = gi_df['unique_num'].astype(int)
 
     # --------------------------------------- For Testing Only ---------------------------------------
 
@@ -318,7 +325,8 @@ for row in eg_df.itertuples():
              [' Max. |', '8.46']]
 
     # Heating system
-    hs = [['Woodheat', str(woodheat)], ['HE Fireplace', str(pts_he_ws[1])], [' | HE Pellet', str(pts_he_ps[1])], [' | HE Furn', str(pts_he_furn[1])],
+    hs = [['Woodheat', str(woodheat)], ['HE Fireplace', str(pts_he_ws[1])], [' | HE Pellet', str(pts_he_ps[1])],
+          [' | HE Furn', str(pts_he_furn[1])],
           ['| Max HS:', str(max_pts_hs)]]
 
     # Main heat and heat fuel
@@ -331,8 +339,6 @@ for row in eg_df.itertuples():
     heat_pump = [['HP type: ', str(hp_type_used[0])], ['HP %: ', str(hp_type_used[1])],
                  ['HP pts: ', str(hp_type_used[2])], ['Mini Split: ', str(pts_hpmini[2])]]
 
-
-
     # HE furnace
     # test_data = [['Diff |', str(diff)[0:10]], ['heatenm2 |', str(heatenm2)[0:13]], ['args_m2 |', str(args_m2)[0:13]],
     #              ['tot_be_pts |', str(pts_tot_be)[0:13]], ['args_be |', str(args_be)[0:13]], ['he_furn |', str(he_furn)[0:13]]]
@@ -344,12 +350,16 @@ for row in eg_df.itertuples():
     # EGtoGI.print_stuff(*be)
     # EGtoGI.print_stuff(*draft)
 
-
     # print(max_pts_hs, no_he_sys, pts_hpmini[2], pts_hpair[2], pts_hpgeo[2], pts_hrv, pts_he_furn[1], pts_he_ps[1],
     #                                   sub_sfeatures_tot, pts_he_ws[1], sub_hsys_tot)
-
 
 # # --------------------------------------- Write DataFrame to CSV file ---------------------------------------
 # gi_df.to_csv(r'Test_GI_file.csv')
 # gi_df.to_csv(r'Benchmark_test.csv')
+
+# rearrange columns so that unique_num is first
+column_names = gi_df.columns.tolist()
+column_names.remove('unique_num')
+column_names = ['unique_num'] + column_names
+gi_df = gi_df[column_names]
 gi_df.to_csv(output_folder + 'GI_' + basename + '.csv')
