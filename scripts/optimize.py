@@ -112,6 +112,8 @@ def get_ers_reductions(orig, model_ers_w_cost, model_ers_no_cost, gi_weights_and
     orig_cpy['ref'] = orig_ref
     ers_reductions['ref'] = 'N/A'
     orig_cpy = orig_cpy[ers_reductions.columns.tolist()]
+    # pd.set_option('display.max_columns', None)
+    # print(orig_cpy)
     orig_cpy.insert(loc=orig_cpy.columns.get_loc('ers_predicted w/o THC') + 1, column='ers_predicted * ratio', value=round(original_ers, 4))  # for first row (originals)
     ret_df = pd.concat([orig_cpy, ers_reductions])
 
@@ -119,7 +121,6 @@ def get_ers_reductions(orig, model_ers_w_cost, model_ers_no_cost, gi_weights_and
 
 
 def calc_savings(orig, reductions_df, model_cost_w_ers, max_rows, first=False):
-    pd.set_option('display.max_columns', None)
     reductions_df = reductions_df.copy()
     reduc = reductions_df[0 if first else 1: max_rows + 1].copy()  # reduc df excludes the first row
     reduc['ERS Rating'] = reduc['ers_predicted w/o THC'] * reduc['ratio']  # new, predicted ERS = (predicted w/o THC) * ratio
@@ -129,11 +130,11 @@ def calc_savings(orig, reductions_df, model_cost_w_ers, max_rows, first=False):
     reductions_df['Main Heating Fuel'] = reduc['Main Heating Fuel']
     new_cost = predict_df(reduc, model_cost_w_ers)['predicted']
     old_cost = orig['Total Heating Cost']
-    # old_cost = predict_df(orig, model_cost_w_ers)['predicted']
     reductions_df['cost_predicted'] = round(new_cost, 2)
+    reductions_df.iat[0, reductions_df.columns.get_loc('cost_predicted')] = 'N/A'  # set row 0 value to N/A
     reduc['cost_savings'] = round(old_cost.iloc[0] - new_cost, 2)
     reductions_df['cost_savings'] = reduc['cost_savings']
-    # reductions_df.iat[0, reductions_df.columns.get_loc('cost_predicted')] = old_cost.iloc[0]
+    reductions_df.iat[0, reductions_df.columns.get_loc('cost_savings')] = 'N/A'  # set row 0 value to N/A
     reductions_df.iat[0, reductions_df.columns.get_loc('Main Heating Fuel')] = orig['Main Heating Fuel'].iloc[0]
     reductions_df['old_cost'] = old_cost.iloc[0]
     reductions_df['unique_num'] = int(orig['unique_num'])
