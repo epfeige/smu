@@ -62,12 +62,12 @@ def get_ers_reductions(orig, model_ers_w_cost, model_ers_no_cost, gi_weights_and
     if 'ID' in orig.columns:
         id = orig['ID'].iloc[0]
 
-    orig_pred = predict_df(orig, model_ers_w_cost)
+    orig_pred = predict_df(orig, model_ers_w_cost)  # predict with THC
     upg_vals = get_attributes_for_upgrade(gi_weights_and_points, orig)
-    original_ers = orig_pred['predicted'].iloc[0]
+    original_ers = orig_pred['predicted'].iloc[0]  # Assign original ERS prediction to variable
     orig_pred_no_cost = predict_df(orig, model_ers_no_cost)
     original_ers_no_cost = orig_pred_no_cost['predicted'].iloc[0]
-    ratio = original_ers / original_ers_no_cost
+    ratio = original_ers / original_ers_no_cost  # calculate ratio
 
     if model_ref:
         orig_ref = predict_df(orig, model_ref)['predicted'].iloc[0]
@@ -76,6 +76,7 @@ def get_ers_reductions(orig, model_ers_w_cost, model_ers_no_cost, gi_weights_and
 
     # generate permutations
     df1 = get_generated_df(orig, all_vals, upg_vals)
+
 
     # exclude tot_hs > 100%
     perc_cols = []
@@ -99,30 +100,32 @@ def get_ers_reductions(orig, model_ers_w_cost, model_ers_no_cost, gi_weights_and
     pred['tot_hs'] = round(dfp.tot_hs, 2)
     pred['ratio'] = round(ratio, 4)
     pred['ers_diff'] = round(original_ers - pred['predicted'] * ratio, 4)
-    pred['reduction'] = pred['ers_diff'] / pred['nchanges']
-    pred = pred.rename(columns={"predicted": "ers_predicted"})
+    pred['reduction'] = round(pred['ers_diff'] / pred['nchanges'], 4)
+    pred = pred.rename(columns={"predicted": "ers_predicted w/o THC"})
 
     ers_reductions = pred[pred['nchanges'] > 0].sort_values(by=['reduction'], ascending=False)
-    orig_cpy = orig.copy()
+    orig_cpy = orig.copy()  # Original input data (row)
     for col in ers_reductions:
         if col not in orig_cpy.columns:
             orig_cpy[col] = 'N/A'
 
-    orig_cpy['ers_predicted'] = original_ers
     orig_cpy['ref'] = orig_ref
     ers_reductions['ref'] = 'N/A'
     orig_cpy = orig_cpy[ers_reductions.columns.tolist()]
+    orig_cpy.insert(loc=orig_cpy.columns.get_loc('ers_predicted w/o THC') + 1, column='ers_predicted * ratio', value=round(original_ers, 4))  # for first row (originals)
     ret_df = pd.concat([orig_cpy, ers_reductions])
 
     return ret_df, id
 
 
 def calc_savings(orig, reductions_df, model_cost_w_ers, max_rows, first=False):
+    pd.set_option('display.max_columns', None)
     reductions_df = reductions_df.copy()
-    reduc = reductions_df[0 if first else 1: max_rows + 1].copy()
-    reduc['ERS Rating'] = reduc['ers_predicted'] * reduc['ratio']
+    reduc = reductions_df[0 if first else 1: max_rows + 1].copy()  # reduc df excludes the first row
+    reduc['ERS Rating'] = reduc['ers_predicted w/o THC'] * reduc['ratio']  # new, predicted ERS = (predicted w/o THC) * ratio
+    reduc['predicted*ratio'] = round(reduc['ERS Rating'].astype(np.float64), 4)
     reduc['Main Heating Fuel'] = orig['Main Heating Fuel'].iloc[0]
-    update_mhf(reduc)
+    update_mhf(reduc)  # update Main Heating Fuel, if applies
     reductions_df['Main Heating Fuel'] = reduc['Main Heating Fuel']
     new_cost = predict_df(reduc, model_cost_w_ers)['predicted']
     old_cost = orig['Total Heating Cost']
@@ -134,6 +137,9 @@ def calc_savings(orig, reductions_df, model_cost_w_ers, max_rows, first=False):
     reductions_df.iat[0, reductions_df.columns.get_loc('Main Heating Fuel')] = orig['Main Heating Fuel'].iloc[0]
     reductions_df['old_cost'] = old_cost.iloc[0]
     reductions_df['unique_num'] = int(orig['unique_num'])
+    reductions_df.iloc[1:, reductions_df.columns.get_loc('ers_predicted * ratio')] = reduc['predicted*ratio'] # start row 1
+    reductions_df.insert(loc=reductions_df.columns.get_loc('ers_predicted * ratio') + 1, column='ERS orig',
+                         value=orig['ERS Rating'])
 
     return reductions_df
 
